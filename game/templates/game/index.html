@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FluxeBet - Blackjack</title>
+    <style>
+        body {
+            background-color: #2E8B57; /* Verde Cassino */
+            font-family: 'Arial', sans-serif;
+            color: white;
+            text-align: center;
+            margin: 0; padding: 20px;
+        }
+        .mesa {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            border: 5px solid #8B4513;
+        }
+        .mao { margin: 20px 0; min-height: 120px; }
+        .carta {
+            background: white;
+            color: black;
+            display: inline-block;
+            width: 60px; height: 90px;
+            margin: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 18px;
+            line-height: 90px; /* Centraliza vertical */
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .btn-hit { background-color: #FFD700; color: black; }
+        .btn-stand { background-color: #DC143C; color: white; }
+        .btn-reset { background-color: #1E90FF; color: white; }
+        
+        .status-box {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎰 FLUXE BET 🎰</h1>
+
+    <div class="mesa">
+        
+        <div class="status-box">
+            <h2>{{ mensagem }}</h2>
+        </div>
+
+        <div class="mao">
+            <h3>🎩 Dealer</h3>
+            {% for carta in dealer_hand %}
+                <div class="carta">
+                    {{ carta.face|default:"🂠" }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <hr>
+
+        <div class="mao">
+            <h3>👤 Você ({{ player_points }})</h3>
+            {% for carta in player_hand %}
+                <div class="carta">{{ carta.face }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="controles">
+            {% if status == "JOGANDO" %}
+                <a href="{% url 'acao' 'hit' %}"><button class="btn btn-hit">HIT (Pedir)</button></a>
+                <a href="{% url 'acao' 'stand' %}"><button class="btn btn-stand">STAND (Parar)</button></a>
+            {% else %}
+                <a href="{% url 'acao' 'reset' %}"><button class="btn btn-reset">JOGAR NOVAMENTE</button></a>
+            {% endif %}
+        </div>
+
+    </div>
+
+</body>
+</html>
