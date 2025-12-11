@@ -5,13 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FluxeBet - Blackjack</title>
     <style>
+        /* 1. Comportamento de rolagem suave */
+        html { scroll-behavior: smooth; }
+
+        /* 2. Definição da Animação (Vem do alto e meio tortinha) */
+        @keyframes darCarta {
+            0% {
+                opacity: 0;
+                transform: translateY(-80px) rotate(-15deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotate(0);
+            }
+        }
+
         body {
-            background-color: #2E8B57; /* Verde Cassino */
+            background-color: #2E8B57;
             font-family: 'Arial', sans-serif;
             color: white;
             text-align: center;
             margin: 0; padding: 20px;
         }
+
         .mesa {
             max-width: 600px;
             margin: 0 auto;
@@ -19,77 +35,103 @@
             padding: 20px;
             border-radius: 15px;
             border: 5px solid #8B4513;
+            min-height: 500px;
         }
-        .mao { margin: 20px 0; min-height: 120px; }
+
         .carta {
-            background: white;
-            color: black;
-            display: inline-block;
-            width: 60px; height: 90px;
-            margin: 5px;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 18px;
-            line-height: 90px; /* Centraliza vertical */
+            background: white; color: black; display: inline-block;
+            width: 70px; height: 100px; margin: 5px; border-radius: 6px;
+            font-weight: bold; font-size: 20px; line-height: 100px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            /* IMPORTANTE: Tirei a animação fixa daqui! Ela vai no HTML agora. */
         }
+
         .btn {
-            padding: 15px 30px;
-            font-size: 18px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 5px;
+            padding: 15px 25px; font-size: 16px; border: none;
+            border-radius: 5px; cursor: pointer; font-weight: bold; margin: 5px;
+            transition: transform 0.1s;
         }
-        .btn-hit { background-color: #FFD700; color: black; }
-        .btn-stand { background-color: #DC143C; color: white; }
-        .btn-reset { background-color: #1E90FF; color: white; }
+        .btn:active { transform: scale(0.95); }
         
-        .status-box {
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
+        .btn-hit { background: #FFD700; color: black; }
+        .btn-stand { background: #DC143C; color: white; }
+        .btn-double { background: #FF8C00; color: white; }
+        .btn-green { background: #32CD32; color: white; }
+        
+        .header-info {
+            display: flex; justify-content: space-between;
+            background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px;
             margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
 
-    <h1>🎰 FLUXE BET 🎰</h1>
-
-    <div class="mesa">
+    <div class="mesa" id="mesa-de-jogo">
         
-        <div class="status-box">
-            <h2>{{ mensagem }}</h2>
+        <div class="header-info">
+            <span>💰 Saldo: <strong>C$ {{ saldo }}</strong></span>
+            <span>🎲 Aposta: <strong>C$ {{ aposta }}</strong></span>
         </div>
 
-        <div class="mao">
-            <h3>🎩 Dealer</h3>
-            {% for carta in dealer_hand %}
-                <div class="carta">
-                    {{ carta.face|default:"🂠" }}
-                </div>
-            {% endfor %}
-        </div>
+        <h1>🎰 FLUXE BET 🎰</h1>
+        <h3 style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">{{ mensagem }}</h3>
 
-        <hr>
+        {% if status == "APOSTANDO" %}
+            <div style="margin-top: 50px;">
+                <p>Faça sua aposta para começar:</p>
+                <form action="{% url 'apostar' %}" method="POST">
+                    {% csrf_token %} 
+                    <input type="number" name="valor_aposta" value="100" min="10" max="{{ saldo }}" 
+                           style="padding: 10px; font-size: 18px; width: 100px; text-align: center;">
+                    <br><br>
+                    <button type="submit" class="btn btn-green">CONFIRMAR APOSTA</button>
+                </form>
+                
+                <br>
+                <a href="{% url 'acao' 'add_money' %}">
+                    <button class="btn" style="background: #4682B4;">➕ Adicionar C$ 1000 (Fake)</button>
+                </a>
+            </div>
 
-        <div class="mao">
-            <h3>👤 Você ({{ player_points }})</h3>
-            {% for carta in player_hand %}
-                <div class="carta">{{ carta.face }}</div>
-            {% endfor %}
-        </div>
+        {% else %}
+            <div class="area-cartas">
+                <h3>🎩 Dealer</h3>
+                {% for carta in dealer_hand %}
+                    <div class="carta" 
+                         style="{% if forloop.last and status == 'JOGANDO' %} animation: darCarta 0.6s ease-out; {% endif %} 
+                                {% if carta.face == '🂠' %} background: #8B0000; color: #8B0000; {% endif %}">
+                        {{ carta.face }}
+                    </div>
+                {% endfor %}
+            </div>
 
-        <div class="controles">
-            {% if status == "JOGANDO" %}
-                <a href="{% url 'acao' 'hit' %}"><button class="btn btn-hit">HIT (Pedir)</button></a>
-                <a href="{% url 'acao' 'stand' %}"><button class="btn btn-stand">STAND (Parar)</button></a>
-            {% else %}
-                <a href="{% url 'acao' 'reset' %}"><button class="btn btn-reset">JOGAR NOVAMENTE</button></a>
-            {% endif %}
-        </div>
+            <hr style="opacity: 0.3; margin: 20px 0;">
+
+            <div class="area-cartas">
+                <h3>👤 Você ({{ player_points }})</h3>
+                {% for carta in player_hand %}
+                    <div class="carta" 
+                         style="{% if forloop.last %} animation: darCarta 0.6s ease-out; {% endif %}">
+                        {{ carta.face }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top: 30px;">
+                {% if status == "JOGANDO" %}
+                    <a href="{% url 'acao' 'hit' %}"><button class="btn btn-hit">HIT (+Carta)</button></a>
+                    <a href="{% url 'acao' 'stand' %}"><button class="btn btn-stand">STAND (Parar)</button></a>
+                    
+                    {% if saldo >= aposta %}
+                        <a href="{% url 'acao' 'double' %}"><button class="btn btn-double">DOUBLE (2x)</button></a>
+                    {% endif %}
+                
+                {% else %}
+                    <a href="{% url 'acao' 'reset' %}"><button class="btn btn-green">NOVA RODADA</button></a>
+                {% endif %}
+            </div>
+        {% endif %}
 
     </div>
 
