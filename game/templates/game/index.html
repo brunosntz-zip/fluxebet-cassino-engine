@@ -43,7 +43,17 @@
             width: 70px; height: 100px; margin: 5px; border-radius: 6px;
             font-weight: bold; font-size: 20px; line-height: 100px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-            /* IMPORTANTE: Tirei a animação fixa daqui! Ela vai no HTML agora. */
+            /* A animação é controlada via Style inline no HTML */
+        }
+
+        /* --- NOVO CSS: A CARTA DEITADA --- */
+        .carta-deitada {
+            transform: rotate(90deg) !important; /* O !important força ela a girar */
+            margin-left: 20px;  /* Dá espaço pros lados pra não encavalar */
+            margin-right: 20px;
+            background-color: #e0e0e0; /* Um fundinho cinza pra destacar */
+            position: relative;
+            top: 15px; /* Ajuste fino pra centralizar verticalmente */
         }
 
         .btn {
@@ -111,10 +121,12 @@
             <div class="area-cartas">
                 <h3>👤 Você ({{ player_points }})</h3>
                 {% for carta in player_hand %}
-                    <div class="carta" 
+                    
+                    <div class="carta {% if forloop.last and dobrou %} carta-deitada {% endif %}" 
                          style="{% if forloop.last %} animation: darCarta 0.6s ease-out; {% endif %}">
                         {{ carta.face }}
                     </div>
+
                 {% endfor %}
             </div>
 
@@ -123,7 +135,7 @@
                     <a href="{% url 'acao' 'hit' %}"><button class="btn btn-hit">HIT (+Carta)</button></a>
                     <a href="{% url 'acao' 'stand' %}"><button class="btn btn-stand">STAND (Parar)</button></a>
                     
-                    {% if saldo >= aposta %}
+                    {% if saldo >= aposta and player_hand|length == 2 %}
                         <a href="{% url 'acao' 'double' %}"><button class="btn btn-double">DOUBLE (2x)</button></a>
                     {% endif %}
                 
@@ -134,6 +146,17 @@
         {% endif %}
 
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function(event) { 
+            var scrollpos = localStorage.getItem('scrollpos');
+            if (scrollpos) window.scrollTo(0, scrollpos);
+        });
+
+        window.onbeforeunload = function(e) {
+            localStorage.setItem('scrollpos', window.scrollY);
+        };
+    </script>
 
 </body>
 </html>
