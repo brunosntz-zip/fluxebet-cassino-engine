@@ -2,145 +2,247 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FluxeBet - Blackjack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FluxeBet - Blackjack VIP</title>
     <style>
-        /* 1. Comportamento de rolagem suave */
+        /* --- 1. CONFIGURAÇÕES GERAIS E MOBILE --- */
         html { scroll-behavior: smooth; }
-
-        /* 2. Definição da Animação (Vem do alto e meio tortinha) */
-        @keyframes darCarta {
-            0% {
-                opacity: 0;
-                transform: translateY(-80px) rotate(-15deg);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) rotate(0);
-            }
-        }
-
+        
         body {
-            background-color: #2E8B57;
-            font-family: 'Arial', sans-serif;
+            /* MUDANÇA AQUI: Pano Bordô (Burgundy) estilo VIP */
+            background: radial-gradient(circle at center, #800020 0%, #4a0012 100%);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             color: white;
             text-align: center;
-            margin: 0; padding: 20px;
+            margin: 0; padding: 10px;
+            touch-action: manipulation;
+            min-height: 100vh; /* Garante que o fundo cubra tudo */
         }
 
+        /* --- 2. ANIMAÇÕES --- */
+        @keyframes darCarta {
+            0% { opacity: 0; transform: translateY(-50px) rotate(-10deg); }
+            100% { opacity: 1; transform: translateY(0) rotate(0); }
+        }
+        @keyframes chipDrop {
+            0% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- 3. HUD SECRETO (Modo Espião) --- */
+        .hud-contador {
+            display: none; /* COMEÇA INVISÍVEL */
+            position: fixed;
+            top: 10px; right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px; border-radius: 8px;
+            border: 1px solid #FFD700;
+            text-align: right; font-family: 'Courier New', monospace;
+            z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            min-width: 100px; backdrop-filter: blur(5px);
+        }
+        .hud-titulo { font-size: 10px; color: #aaa; text-transform: uppercase; margin-bottom: 2px; }
+        .hud-valor { font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px; }
+        .hud-destaque { color: #32CD32; text-shadow: 0 0 10px #32CD32; }
+        .hud-perigo { color: #FF4500; text-shadow: 0 0 10px #FF4500; }
+
+        /* --- 4. A MESA --- */
         .mesa {
-            max-width: 600px;
-            margin: 0 auto;
-            background: rgba(0,0,0,0.2);
-            padding: 20px;
+            width: 100%; max-width: 600px; margin: 0 auto;
+            background: rgba(0,0,0,0.3); /* Mais escuro para combinar com o bordô */
+            padding: 15px; box-sizing: border-box;
             border-radius: 15px;
-            border: 5px solid #8B4513;
-            min-height: 500px;
+            border: 3px solid #c0a060; /* Borda dourada envelhecida */
+            min-height: 85vh;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
         }
 
-        .carta {
-            background: white; color: black; display: inline-block;
-            width: 70px; height: 100px; margin: 5px; border-radius: 6px;
-            font-weight: bold; font-size: 20px; line-height: 100px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-            /* A animação é controlada via Style inline no HTML */
-        }
-
-        /* --- NOVO CSS: A CARTA DEITADA --- */
-        .carta-deitada {
-            transform: rotate(90deg) !important; /* O !important força ela a girar */
-            margin-left: 20px;  /* Dá espaço pros lados pra não encavalar */
-            margin-right: 20px;
-            background-color: #e0e0e0; /* Um fundinho cinza pra destacar */
-            position: relative;
-            top: 15px; /* Ajuste fino pra centralizar verticalmente */
-        }
-
-        .btn {
-            padding: 15px 25px; font-size: 16px; border: none;
-            border-radius: 5px; cursor: pointer; font-weight: bold; margin: 5px;
-            transition: transform 0.1s;
-        }
-        .btn:active { transform: scale(0.95); }
-        
-        .btn-hit { background: #FFD700; color: black; }
-        .btn-stand { background: #DC143C; color: white; }
-        .btn-double { background: #FF8C00; color: white; }
-        .btn-green { background: #32CD32; color: white; }
-        
         .header-info {
             display: flex; justify-content: space-between;
-            background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px;
-            margin-bottom: 20px;
+            background: rgba(0,0,0,0.6); padding: 12px; border-radius: 10px;
+            margin-bottom: 15px; font-size: 14px;
+            border: 1px solid rgba(255,215,0,0.3);
         }
+
+        .titulo-secreto { cursor: pointer; user-select: none; transition: opacity 0.2s; color: #FFD700; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .titulo-secreto:active { opacity: 0.7; }
+
+        .msg-box {
+            background: rgba(90, 0, 20, 0.6); /* Avermelhado transparente */
+            padding: 12px; border-radius: 8px; font-size: 16px;
+            min-height: 40px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- 5. CARTAS --- */
+        .area-cartas {
+            min-height: 120px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+        }
+        .carta {
+            background: white; color: black; 
+            display: inline-flex; justify-content: center; align-items: center;
+            width: 60px; height: 90px; margin: 3px; border-radius: 6px;
+            font-weight: bold; font-size: 20px;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.6);
+            border: 1px solid #ddd;
+        }
+        .carta-deitada { transform: rotate(90deg) !important; margin: 0 15px; background-color: #e6e6e6; }
+
+        /* --- 6. NOVA ÁREA DE APOSTAS (FICHAS) --- */
+        .painel-apostas-container {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px; padding: 15px; margin-top: 20px;
+            border: 2px solid rgba(255,215,0,0.2);
+        }
+
+        .display-aposta-atual {
+            font-size: 24px; font-weight: bold; color: #FFD700; margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .label-aposta { font-size: 12px; color: #aaa; text-transform: uppercase; }
+
+        .grid-fichas {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+
+        /* Estilo das Fichas (Bolinhas) */
+        .ficha {
+            width: 55px; height: 55px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 14px; color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 0 0 3px rgba(255,255,255,0.3); /* Borda interna estilo cassino */
+            border: 2px solid rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .ficha:active { transform: scale(0.95); }
+        .ficha:hover { filter: brightness(1.1); }
+
+        /* Cores padrão de cassino */
+        .ficha-10 { background: linear-gradient(145deg, #d32f2f, #b71c1c); } /* Vermelha */
+        .ficha-25 { background: linear-gradient(145deg, #388e3c, #1b5e20); } /* Verde */
+        .ficha-50 { background: linear-gradient(145deg, #1976d2, #0d47a1); } /* Azul */
+        .ficha-100 { background: linear-gradient(145deg, #212121, #000000); border-color: #FFD700; color: #FFD700; } /* Preta VIP */
+        .ficha-500 { background: linear-gradient(145deg, #7b1fa2, #4a148c); border-color: #FFD700; color: #FFD700; font-size: 12px;} /* Roxa High Roller */
+
+        .controles-aposta { display: flex; gap: 10px; }
+        .btn-limpar { background: #d32f2f; color: white; flex: 1; padding: 12px; border-radius: 8px; border:none; font-weight:bold;}
+        .btn-confirmar { background: #388e3c; color: white; flex: 2; padding: 12px; border-radius: 8px; border:none; font-weight:bold; font-size: 18px;}
+        .btn-confirmar:disabled { background: #555; color: #aaa; cursor: not-allowed;}
+
+        /* --- 7. BOTÕES DE AÇÃO (JOGO) --- */
+        .painel-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; padding-bottom: 20px; }
+        .btn {
+            padding: 18px; font-size: 16px; border: none; border-radius: 12px; cursor: pointer; 
+            font-weight: 800; text-transform: uppercase;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: transform 0.1s, box-shadow 0.1s; width: 100%;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-hit { background: #FFD700; color: #333; }
+        .btn-stand { background: #DC143C; color: white; }
+        .btn-double { background: #FF8C00; color: white; grid-column: span 2; }
+        .btn-green { background: #32CD32; color: white; grid-column: span 2; }
     </style>
 </head>
 <body>
 
+    <div class="hud-contador" id="painel-secreto">
+        <div class="hud-titulo">Running Count</div>
+        <div class="hud-valor">{{ running_count }}</div>
+        <div class="hud-titulo">Decks Left</div>
+        <div class="hud-valor">{{ decks_restantes }}</div>
+        <hr style="border-color: #555; margin: 5px 0 10px 0;">
+        <div class="hud-titulo" style="color: #FFD700;">TRUE COUNT</div>
+        <div class="hud-valor {% if true_count >= 1 %}hud-destaque{% elif true_count <= -1 %}hud-perigo{% endif %}" style="font-size: 24px;">{{ true_count }}</div>
+    </div>
+
     <div class="mesa" id="mesa-de-jogo">
         
         <div class="header-info">
-            <span>💰 Saldo: <strong>C$ {{ saldo }}</strong></span>
-            <span>🎲 Aposta: <strong>C$ {{ aposta }}</strong></span>
+            <span>💰 <strong id="saldo-atual">{{ saldo }}</strong></span>
+            {% if status != "APOSTANDO" %}
+                <span>🎲 <strong>{{ aposta }}</strong></span>
+            {% endif %}
         </div>
 
-        <h1>🎰 FLUXE BET 🎰</h1>
-        <h3 style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">{{ mensagem }}</h3>
+        <h1 class="titulo-secreto" onclick="toggleSecretHud()" style="margin: 10px 0;">
+            🎰 FLUXE BET VIP 🎰
+        </h1>
+        
+        <div class="msg-box">{{ mensagem }}</div>
 
         {% if status == "APOSTANDO" %}
-            <div style="margin-top: 50px;">
-                <p>Faça sua aposta para começar:</p>
-                <form action="{% url 'apostar' %}" method="POST">
-                    {% csrf_token %} 
-                    <input type="number" name="valor_aposta" value="100" min="10" max="{{ saldo }}" 
-                           style="padding: 10px; font-size: 18px; width: 100px; text-align: center;">
-                    <br><br>
-                    <button type="submit" class="btn btn-green">CONFIRMAR APOSTA</button>
+            <div class="painel-apostas-container" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
+                
+                <div>
+                    <div class="label-aposta">Sua Aposta Atual</div>
+                    <div class="display-aposta-atual">C$ <span id="valor-aposta-visual">0</span></div>
+                </div>
+
+                <div class="grid-fichas">
+                    <div class="ficha ficha-10" onclick="addFicha(10)">10</div>
+                    <div class="ficha ficha-25" onclick="addFicha(25)">25</div>
+                    <div class="ficha ficha-50" onclick="addFicha(50)">50</div>
+                    <div class="ficha ficha-100" onclick="addFicha(100)">100</div>
+                    <div class="ficha ficha-500" onclick="addFicha(500)">500</div>
+                </div>
+
+                <form action="{% url 'apostar' %}" method="POST" id="form-aposta">
+                    {% csrf_token %}
+                    <input type="hidden" id="input-aposta-hidden" name="valor_aposta" value="0">
+                    
+                    <div class="controles-aposta">
+                        <button type="button" class="btn-limpar" onclick="limparAposta()">LIMPAR</button>
+                        <button type="submit" class="btn-confirmar" id="btn-jogar" disabled>JOGAR</button>
+                    </div>
                 </form>
                 
                 <br>
-                <a href="{% url 'acao' 'add_money' %}">
-                    <button class="btn" style="background: #4682B4;">➕ Adicionar C$ 1000 (Fake)</button>
+                <a href="{% url 'acao' 'add_money' %}" style="text-decoration: none;">
+                    <div style="font-size: 12px; color: #FFD700; opacity: 0.8;">+ Recarregar C$ 1000</div>
                 </a>
             </div>
 
         {% else %}
-            <div class="area-cartas">
-                <h3>🎩 Dealer</h3>
-                {% for carta in dealer_hand %}
-                    <div class="carta" 
-                         style="{% if forloop.last and status == 'JOGANDO' %} animation: darCarta 0.6s ease-out; {% endif %} 
-                                {% if carta.face == '🂠' %} background: #8B0000; color: #8B0000; {% endif %}">
-                        {{ carta.face }}
-                    </div>
-                {% endfor %}
+            <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin-top: 20px;">
+                <div style="font-size: 12px; opacity: 0.7; margin-bottom: 5px;">DEALER</div>
+                <div class="area-cartas">
+                    {% for carta in dealer_hand %}
+                        <div class="carta" 
+                             style="{% if forloop.last and status == 'JOGANDO' %} animation: darCarta 0.5s ease-out; {% endif %} 
+                                    {% if carta.face == '🂠' %} background: #8B0000; color: #c0a060; border: 2px solid #c0a060; {% endif %}">
+                            {{ carta.face }}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
 
-            <hr style="opacity: 0.3; margin: 20px 0;">
+            <hr style="opacity: 0.2; width: 80%; border-color: #c0a060;">
 
-            <div class="area-cartas">
-                <h3>👤 Você ({{ player_points }})</h3>
-                {% for carta in player_hand %}
-                    
-                    <div class="carta {% if forloop.last and dobrou %} carta-deitada {% endif %}" 
-                         style="{% if forloop.last %} animation: darCarta 0.6s ease-out; {% endif %}">
-                        {{ carta.face }}
-                    </div>
-
-                {% endfor %}
+            <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
+                <div style="font-size: 12px; opacity: 0.7; margin-bottom: 5px;">VOCÊ ({{ player_points }})</div>
+                <div class="area-cartas">
+                    {% for carta in player_hand %}
+                        <div class="carta {% if forloop.last and dobrou %} carta-deitada {% endif %}" 
+                             style="{% if forloop.last %} animation: darCarta 0.5s ease-out; {% endif %}">
+                            {{ carta.face }}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
 
-            <div style="margin-top: 30px;">
+            <div class="painel-botoes">
                 {% if status == "JOGANDO" %}
-                    <a href="{% url 'acao' 'hit' %}"><button class="btn btn-hit">HIT (+Carta)</button></a>
-                    <a href="{% url 'acao' 'stand' %}"><button class="btn btn-stand">STAND (Parar)</button></a>
-                    
+                    <a href="{% url 'acao' 'hit' %}" style="text-decoration: none;"><div class="btn btn-hit">HIT</div></a>
+                    <a href="{% url 'acao' 'stand' %}" style="text-decoration: none;"><div class="btn btn-stand">STAND</div></a>
                     {% if saldo >= aposta and player_hand|length == 2 %}
-                        <a href="{% url 'acao' 'double' %}"><button class="btn btn-double">DOUBLE (2x)</button></a>
+                        <a href="{% url 'acao' 'double' %}" style="text-decoration: none; grid-column: span 2;"><div class="btn btn-double">DOUBLE (2x)</div></a>
                     {% endif %}
-                
                 {% else %}
-                    <a href="{% url 'acao' 'reset' %}"><button class="btn btn-green">NOVA RODADA</button></a>
+                    <a href="{% url 'acao' 'reset' %}" style="text-decoration: none; grid-column: span 2;"><div class="btn btn-green">NOVA RODADA</div></a>
                 {% endif %}
             </div>
         {% endif %}
@@ -148,15 +250,73 @@
     </div>
 
     <script>
+        // --- LÓGICA DAS FICHAS DE APOSTA ---
+        let apostaAtual = 0;
+        // Pega o saldo do template Django e converte pra número
+        const saldoMaximo = parseInt("{{ saldo }}"); 
+        
+        const displayVisual = document.getElementById('valor-aposta-visual');
+        const inputHidden = document.getElementById('input-aposta-hidden');
+        const btnJogar = document.getElementById('btn-jogar');
+
+        function addFicha(valor) {
+            // Verifica se tem saldo
+            if (apostaAtual + valor <= saldoMaximo) {
+                apostaAtual += valor;
+                atualizarInterfaceAposta();
+                // Efeito visual de clique na ficha (opcional, já tem CSS active)
+            } else {
+                // Feedback visual simples de erro (piscar vermelho?)
+                displayVisual.style.color = '#FF4500';
+                setTimeout(() => { displayVisual.style.color = '#FFD700'; }, 300);
+            }
+        }
+
+        function limparAposta() {
+            apostaAtual = 0;
+            atualizarInterfaceAposta();
+        }
+
+        function atualizarInterfaceAposta() {
+            // Atualiza o texto na tela
+            displayVisual.innerText = apostaAtual;
+            // Atualiza o valor escondido que vai pro form
+            inputHidden.value = apostaAtual;
+            
+            // Só libera o botão JOGAR se aposta > 0
+            if (apostaAtual > 0) {
+                btnJogar.disabled = false;
+                btnJogar.style.cursor = 'pointer';
+            } else {
+                btnJogar.disabled = true;
+                btnJogar.style.cursor = 'not-allowed';
+            }
+        }
+
+        // --- LÓGICA DO MODO ESPIÃO (Mantida) ---
+        function toggleSecretHud() {
+            var hud = document.getElementById('painel-secreto');
+            hud.style.display = (hud.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // Mantém posição e estado do HUD
         document.addEventListener("DOMContentLoaded", function(event) { 
             var scrollpos = localStorage.getItem('scrollpos');
             if (scrollpos) window.scrollTo(0, scrollpos);
+            var hudState = localStorage.getItem('hudOpen');
+            if(hudState === 'true') document.getElementById('painel-secreto').style.display = 'block';
+            
+            // Se estiver na tela de aposta, inicializa o botão JOGAR como desabilitado
+            if(document.getElementById('btn-jogar')) {
+                atualizarInterfaceAposta();
+            }
         });
 
         window.onbeforeunload = function(e) {
             localStorage.setItem('scrollpos', window.scrollY);
+            var isOpen = document.getElementById('painel-secreto').style.display === 'block';
+            localStorage.setItem('hudOpen', isOpen);
         };
     </script>
-
 </body>
 </html>

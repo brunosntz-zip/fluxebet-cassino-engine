@@ -23,9 +23,53 @@ class BlackjackEngine:
         random.shuffle(self.baralho)
 
     def dar_carta(self):
-        if len(self.baralho) < 10: # Se tiver pouca carta, embaralha de novo
+        # --- SIMULAÇÃO MONTE CARLO (Deck Penetration) ---
+        # O dealer não espera chegar a 0. Ele corta quando sobram 
+        # entre 52 (1 deck) e 75 (1.5 decks) cartas.
+        corte_seguranca = random.randint(52, 75)
+        
+        if len(self.baralho) < corte_seguranca: 
+            self.mensagem = "🔄 Baralho cortado! Embaralhando..."
             self.criar_baralho()
+            
         return self.baralho.pop()
+
+    def get_contagem_hilo(self):
+        """
+        Hack do sistema: Calcula a contagem baseada no que RESTA no baralho.
+        Matemática: Se o baralho completo soma 0, o que saiu é o inverso do que sobrou.
+        """
+        if not self.baralho: return {'running_count': 0, 'true_count': 0, 'decks_restantes': 6}
+
+        contagem_restante = 0
+        cartas_restantes = len(self.baralho)
+        
+        # 1. Calcula o valor Hi-Lo das cartas que AINDA estão no monte (escondidas)
+        for carta in self.baralho:
+            val = carta['valor']
+            if val in ['2', '3', '4', '5', '6']:
+                contagem_restante += 1  # No monte tem carta ruim, então na mesa saiu carta boa (-1)
+            elif val in ['10', 'J', 'Q', 'K', 'A']:
+                contagem_restante -= 1  # No monte tem carta boa, então na mesa saiu carta ruim (+1)
+            # 7, 8, 9 valem 0
+            
+        # 2. A contagem da mesa ("Running Count") é o inverso matemático do que sobrou
+        # Ex: Se no monte a conta é positiva (sobrou muita carta baixa), a mesa tá rica (negativa).
+        # Pera, a lógica é: Running Count = (O que saiu). 
+        # Se sobrou 2, 3, 4 (valor +1), a conta do monte é POSITIVA.
+        # Isso significa que saíram as altas (valor -1).
+        # Logo, Running Count = contagem_restante * -1.
+        running_count = contagem_restante * -1
+        
+        # 3. True Count = Running Count / Baralhos Restantes
+        decks_restantes = max(1, round(cartas_restantes / 52, 1))
+        true_count = round(running_count / decks_restantes, 2)
+        
+        return {
+            'running_count': running_count,
+            'true_count': true_count,
+            'decks_restantes': decks_restantes
+        }
 
     def calcular_pontos(self, mao):
         pontos = 0
@@ -160,6 +204,9 @@ class BlackjackEngine:
         else:
             dealer_show = self.mao_dealer
 
+        # --- DADOS DO CONTADOR ---
+        dados_contagem = self.get_contagem_hilo()
+
         return {
             'player_hand': self.mao_jogador,
             'dealer_hand': dealer_show,
@@ -169,5 +216,9 @@ class BlackjackEngine:
             'mensagem': self.mensagem,
             'saldo': self.saldo,
             'aposta': self.aposta_atual,
-            'dobrou': getattr(self, 'dobrou', False)
+            'dobrou': getattr(self, 'dobrou', False),
+            # Dados extras para o HUD
+            'running_count': dados_contagem['running_count'],
+            'true_count': dados_contagem['true_count'],
+            'decks_restantes': dados_contagem['decks_restantes']
         }
