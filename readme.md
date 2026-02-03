@@ -1,4 +1,4 @@
-# 🎰 CassinoVB - Blackjack Engine (CLI)
+# 🎰 FLUXE BET - Blackjack Engine (CLI)
 
 Engine de Cassino desenvolvida em Python focado na lógica matemática do Blackjack (21).
 Este projeto simula um ambiente real de cassino, incluindo gestão de banca (eWallet), regras de Dealer e múltiplos baralhos reais.
